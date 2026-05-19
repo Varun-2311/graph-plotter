@@ -11,7 +11,9 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api');
 
-  const port = process.env.PORT || 3000;
-  await app.listen(port, '0.0.0.0');  console.log(`🚀 Graph Plotter API running on port ${port}`);
+  await app.listen(process.env.PORT || 3000);
+  console.log('🚀 Graph Plotter API running at http://localhost:3000');
+  console.log('📊 Frontend running at http://localhost:3000');
+  console.log('🔗 API Base URL: http://localhost:3000/api/charts');
 }
 bootstrap();
