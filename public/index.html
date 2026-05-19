@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Graph Plotter</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+    :root {
+      --bg: #0d0d0f;
+      --surface: #16161a;
+      --surface2: #1e1e24;
+      --border: #2a2a35;
+      --accent: #7c6af7;
+      --accent2: #f76a8a;
+      --green: #4ade80;
+      --text: #e8e8f0;
+      --muted: #6b6b80;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+    }
+
+    header {
+      padding: 20px 40px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    header .logo {
+      font-family: 'Space Mono', monospace;
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    header .tag {
+      font-size: 0.7rem;
+      background: var(--accent);
+      color: white;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 0;
+      height: calc(100vh - 65px);
+    }
+
+    .sidebar {
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .section-title {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--muted);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label {
+      font-size: 0.82rem;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    input, select, textarea {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border 0.2s;
+      width: 100%;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--accent);
+    }
+
+    textarea { resize: vertical; min-height: 60px; }
+
+    .hint {
+      font-size: 0.73rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .btn {
+      padding: 11px 20px;
+      border-radius: 8px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+      width: 100%;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+    .btn-primary:hover { background: #6a58e0; transform: translateY(-1px); }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+
+    .btn-danger {
+      background: transparent;
+      border: 1px solid #f76a8a44;
+      color: var(--accent2);
+    }
+    .btn-danger:hover { background: #f76a8a22; }
+
+    .btn-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .chart-area {
+      display: flex;
+      flex-direction: column;
+      padding: 24px;
+      gap: 20px;
+      overflow-y: auto;
+    }
+
+    .chart-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      flex: 1;
+      position: relative;
+      min-height: 400px;
+    }
+
+    .chart-box canvas { max-height: 400px; }
+
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+
+    .chart-title {
+      font-family: 'Space Mono', monospace;
+      font-size: 1rem;
+      color: var(--text);
+    }
+
+    .chart-meta {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      gap: 12px;
+      color: var(--muted);
+    }
+
+    .empty-state .icon { font-size: 3rem; opacity: 0.3; }
+
+    /* Saved Charts List */
+    .charts-list {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .charts-list-header {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .charts-list-header span {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .chart-item {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .chart-item:last-child { border-bottom: none; }
+    .chart-item:hover { background: var(--surface2); }
+
+    .chart-item-info .name {
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+
+    .chart-item-info .meta {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .chart-item-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .icon-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      width: 30px;
+      height: 30px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+
+    .icon-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .icon-btn.del:hover { border-color: var(--accent2); color: var(--accent2); }
+
+    .badge {
+      font-size: 0.68rem;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .badge-line { background: #7c6af722; color: var(--accent); }
+    .badge-bar  { background: #4ade8022; color: var(--green); }
+    .badge-scatter { background: #f76a8a22; color: var(--accent2); }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 0.88rem;
+      display: none;
+      z-index: 999;
+      box-shadow: 0 8px 32px #00000066;
+    }
+    .toast.show { display: block; animation: slideUp 0.3s ease; }
+    .toast.success { border-color: var(--green); color: var(--green); }
+    .toast.error { border-color: var(--accent2); color: var(--accent2); }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">graph-plotter</div>
+  <div class="tag">NestJS + MongoDB</div>
+</header>
+
+<div class="layout">
+
+  <!-- SIDEBAR FORM -->
+  <aside class="sidebar">
+    <div>
+      <div class="section-title">Chart Details</div>
+      <div class="field">
+        <label>Title</label>
+        <input type="text" id="title" placeholder="e.g. Monthly Revenue" />
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Chart Type</label>
+      <select id="chartType">
+        <option value="line">Line</option>
+        <option value="bar">Bar</option>
+        <option value="scatter">Scatter</option>
+      </select>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+      <div class="field">
+        <label>X-Axis Label</label>
+        <input type="text" id="xLabel" placeholder="e.g. Month" />
+      </div>
+      <div class="field">
+        <label>Y-Axis Label</label>
+        <input type="text" id="yLabel" placeholder="e.g. Revenue" />
+      </div>
+    </div>
+
+    <hr class="divider"/>
+
+    <div>
+      <div class="section-title">Data Points</div>
+      <div class="field">
+        <label>X-Axis Values</label>
+        <input type="text" id="xData" placeholder="1, 2, 3, 4, 5" />
+        <span class="hint">Comma-separated numbers</span>
+      </div>
+      <div class="field" style="margin-top:10px;">
+        <label>Y-Axis Values</label>
+        <input type="text" id="yData" placeholder="10, 25, 18, 40, 33" />
+        <span class="hint">Must match X count</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Description (optional)</label>
+      <textarea id="description" placeholder="Notes about this chart..."></textarea>
+    </div>
+
+    <button class="btn btn-primary" onclick="plotChart()">▶ Plot Chart</button>
+
+    <div class="btn-row">
+      <button class="btn btn-outline" onclick="saveChart()">💾 Save to DB</button>
+      <button class="btn btn-outline" onclick="clearForm()">✕ Clear</button>
+    </div>
+
+    <hr class="divider"/>
+
+    <div>
+      <div class="section-title">Load Sample Data</div>
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        <button class="btn btn-outline" onclick="loadSample('sales')">📈 Sales Data</button>
+        <button class="btn btn-outline" onclick="loadSample('temp')">🌡️ Temperature Data</button>
+        <button class="btn btn-outline" onclick="loadSample('scatter')">⬤ Scatter Sample</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- CHART AREA -->
+  <main class="chart-area">
+
+    <div class="chart-box">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title" id="displayTitle">No chart plotted yet</div>
+          <div class="chart-meta" id="displayMeta">Enter data on the left and click Plot Chart</div>
+        </div>
+        <span class="badge badge-line" id="typeBadge">LINE</span>
+      </div>
+      <div id="emptyState" class="empty-state">
+        <div class="icon">📊</div>
+        <div>Your chart will appear here</div>
+      </div>
+      <canvas id="myChart" style="display:none;"></canvas>
+    </div>
+
+    <!-- Saved Charts -->
+    <div class="charts-list">
+      <div class="charts-list-header">
+        <span>Saved Charts</span>
+        <button class="btn btn-outline" style="width:auto;padding:6px 14px;font-size:0.8rem;" onclick="loadAllCharts()">↻ Refresh</button>
+      </div>
+      <div id="chartsList">
+        <div style="padding:24px; text-align:center; color:var(--muted); font-size:0.85rem;">
+          Click Refresh to load saved charts
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const API = '/api/charts';
+  let chartInstance = null;
+  let editingId = null;
+
+  function showToast(msg, type = 'success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = `toast show ${type}`;
+    setTimeout(() => t.className = 'toast', 3000);
+  }
+
+  function parseNumbers(str) {
+    return str.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
+  }
+
+  function plotChart() {
+    const title    = document.getElementById('title').value || 'Untitled Chart';
+    const xLabel   = document.getElementById('xLabel').value || 'X';
+    const yLabel   = document.getElementById('yLabel').value || 'Y';
+    const chartType= document.getElementById('chartType').value;
+    const xData    = parseNumbers(document.getElementById('xData').value);
+    const yData    = parseNumbers(document.getElementById('yData').value);
+
+    if (!xData.length || !yData.length) {
+      showToast('Please enter valid X and Y data', 'error'); return;
+    }
+    if (xData.length !== yData.length) {
+      showToast(`X has ${xData.length} values but Y has ${yData.length}`, 'error'); return;
+    }
+
+    document.getElementById('displayTitle').textContent = title;
+    document.getElementById('displayMeta').textContent  = `${xLabel} vs ${yLabel} · ${xData.length} points`;
+
+    const badge = document.getElementById('typeBadge');
+    badge.textContent = chartType.toUpperCase();
+    badge.className = `badge badge-${chartType}`;
+
+    document.getElementById('emptyState').style.display = 'none';
+    const canvas = document.getElementById('myChart');
+    canvas.style.display = 'block';
+
+    if (chartInstance) chartInstance.destroy();
+
+    const colorMap = {
+      line:    { border: '#7c6af7', bg: '#7c6af722' },
+      bar:     { border: '#4ade80', bg: '#4ade8044' },
+      scatter: { border: '#f76a8a', bg: '#f76a8a44' },
+    };
+    const c = colorMap[chartType];
+
+    const data = chartType === 'scatter'
+      ? { datasets: [{ label: yLabel, data: xData.map((x,i) => ({ x, y: yData[i] })), backgroundColor: c.bg, borderColor: c.border, pointRadius: 7 }] }
+      : { labels: xData, datasets: [{ label: yLabel, data: yData, borderColor: c.border, backgroundColor: c.bg, borderWidth: 2, fill: chartType === 'line', tension: 0.4, pointRadius: 5 }] };
+
+    chartInstance = new Chart(canvas, {
+      type: chartType,
+      data,
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { labels: { color: '#e8e8f0' } }
+        },
+        scales: {
+          x: { title: { display: true, text: xLabel, color: '#6b6b80' }, ticks: { color: '#6b6b80' }, grid: { color: '#2a2a35' } },
+          y: { title: { display: true, text: yLabel, color: '#6b6b80' }, ticks: { color: '#6b6b80' }, grid: { color: '#2a2a35' } }
+        }
+      }
+    });
+  }
+
+  async function saveChart() {
+    const title    = document.getElementById('title').value;
+    const xLabel   = document.getElementById('xLabel').value;
+    const yLabel   = document.getElementById('yLabel').value;
+    const chartType= document.getElementById('chartType').value;
+    const xData    = parseNumbers(document.getElementById('xData').value);
+    const yData    = parseNumbers(document.getElementById('yData').value);
+    const description = document.getElementById('description').value;
+
+    if (!title || !xData.length || !yData.length) {
+      showToast('Fill in title, X and Y data before saving', 'error'); return;
+    }
+
+    const payload = { title, xLabel, yLabel, chartType, xData, yData, description };
+    const url     = editingId ? `${API}/${editingId}` : API;
+    const method  = editingId ? 'PATCH' : 'POST';
+
+    try {
+      const res  = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+      showToast(editingId ? '✅ Chart updated!' : '✅ Chart saved to MongoDB!');
+      editingId = null;
+      loadAllCharts();
+    } catch (e) {
+      showToast('Error: ' + e.message, 'error');
+    }
+  }
+
+  async function loadAllCharts() {
+    try {
+      const res    = await fetch(API);
+      const charts = await res.json();
+      const list   = document.getElementById('chartsList');
+
+      if (!charts.length) {
+        list.innerHTML = `<div style="padding:24px;text-align:center;color:var(--muted);font-size:0.85rem;">No saved charts yet</div>`;
+        return;
+      }
+
+      list.innerHTML = charts.map(c => `
+        <div class="chart-item">
+          <div class="chart-item-info">
+            <div class="name">${c.title}</div>
+            <div class="meta">${c.xLabel} vs ${c.yLabel} · ${c.xData.length} pts · <span class="badge badge-${c.chartType}">${c.chartType}</span></div>
+          </div>
+          <div class="chart-item-actions">
+            <button class="icon-btn" onclick="loadChart('${c._id}')" title="Load">▶</button>
+            <button class="icon-btn del" onclick="deleteChart('${c._id}')" title="Delete">✕</button>
+          </div>
+        </div>
+      `).join('');
+    } catch (e) {
+      showToast('Could not reach API', 'error');
+    }
+  }
+
+  async function loadChart(id) {
+    try {
+      const res   = await fetch(`${API}/${id}`);
+      const chart = await res.json();
+      document.getElementById('title').value       = chart.title;
+      document.getElementById('xLabel').value      = chart.xLabel;
+      document.getElementById('yLabel').value      = chart.yLabel;
+      document.getElementById('chartType').value   = chart.chartType;
+      document.getElementById('xData').value       = chart.xData.join(', ');
+      document.getElementById('yData').value       = chart.yData.join(', ');
+      document.getElementById('description').value = chart.description || '';
+      editingId = id;
+      plotChart();
+      showToast('Chart loaded — edit and save to update');
+    } catch (e) {
+      showToast('Failed to load chart', 'error');
+    }
+  }
+
+  async function deleteChart(id) {
+    if (!confirm('Delete this chart?')) return;
+    try {
+      const res  = await fetch(`${API}/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      showToast(data.message);
+      loadAllCharts();
+    } catch (e) {
+      showToast('Delete failed', 'error');
+    }
+  }
+
+  function clearForm() {
+    ['title','xLabel','yLabel','xData','yData','description'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('chartType').value = 'line';
+    editingId = null;
+  }
+
+  function loadSample(type) {
+    const samples = {
+      sales: {
+        title: 'Monthly Sales 2024', xLabel: 'Month', yLabel: 'Revenue (₹k)',
+        chartType: 'bar', xData: '1,2,3,4,5,6,7,8,9,10,11,12',
+        yData: '42,55,38,70,65,80,90,75,88,95,102,115', description: 'Monthly revenue in thousands'
+      },
+      temp: {
+        title: 'Bengaluru Temperatures', xLabel: 'Month', yLabel: 'Temp (°C)',
+        chartType: 'line', xData: '1,2,3,4,5,6,7,8,9,10,11,12',
+        yData: '22,24,27,30,28,24,23,24,25,24,22,21', description: 'Average monthly temps'
+      },
+      scatter: {
+        title: 'Study vs Score', xLabel: 'Hours Studied', yLabel: 'Test Score',
+        chartType: 'scatter', xData: '1,2,2.5,3,4,5,5.5,6,7,8',
+        yData: '40,52,58,61,70,78,80,85,91,96', description: 'Study hours vs test performance'
+      }
+    };
+    const s = samples[type];
+    document.getElementById('title').value     = s.title;
+    document.getElementById('xLabel').value    = s.xLabel;
+    document.getElementById('yLabel').value    = s.yLabel;
+    document.getElementById('chartType').value = s.chartType;
+    document.getElementById('xData').value     = s.xData;
+    document.getElementById('yData').value     = s.yData;
+    document.getElementById('description').value = s.description;
+    plotChart();
+  }
+
+  // Load charts on page load
+  window.onload = loadAllCharts;
+</script>
+</body>
+</html>

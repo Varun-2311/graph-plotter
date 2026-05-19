@@ -1,0 +1,119 @@
+# Graph Plotter — Setup & Run Guide
+
+## STEP 1 — Create project folder
+
+Open PowerShell or CMD and run:
+
+    cd C:\Users\varun
+    mkdir Projects
+    cd Projects
+    nest new graph-plotter
+
+When asked "Which package manager?" → choose npm → press Enter
+Wait for it to finish, then:
+
+    cd graph-plotter
+
+
+## STEP 2 — Replace all source files
+
+Delete everything inside the `src/` folder.
+Then copy the provided files into the project like this:
+
+    graph-plotter/
+    ├── src/
+    │   ├── charts/
+    │   │   ├── dto/
+    │   │   │   ├── create-chart.dto.ts
+    │   │   │   └── update-chart.dto.ts
+    │   │   ├── chart.schema.ts
+    │   │   ├── charts.controller.ts
+    │   │   ├── charts.module.ts
+    │   │   └── charts.service.ts
+    │   ├── app.module.ts
+    │   └── main.ts
+    ├── public/
+    │   └── index.html
+    ├── nest-cli.json       ← replace this too
+    ├── package.json        ← replace this too
+    └── tsconfig.json       ← replace this too
+
+
+## STEP 3 — Install dependencies
+
+In the project folder run:
+
+    npm install
+
+
+## STEP 4 — Make sure MongoDB is running
+
+Open PowerShell and run:
+
+    sc query MongoDB
+
+You should see STATE: RUNNING
+If not, run:
+
+    net start MongoDB
+
+
+## STEP 5 — Start the app
+
+    npm run start:dev
+
+You should see:
+  🚀 Graph Plotter API running at http://localhost:3000
+  📊 Frontend running at http://localhost:3000
+
+If you see errors, paste them and get help.
+
+
+## STEP 6 — Open the web page
+
+Open your browser and go to:
+
+    http://localhost:3000
+
+
+## STEP 7 — Test in Postman
+
+Import these requests into Postman:
+
+### CREATE a chart
+  Method: POST
+  URL: http://localhost:3000/api/charts
+  Body (JSON):
+  {
+    "title": "Sales 2024",
+    "xLabel": "Month",
+    "yLabel": "Revenue",
+    "xData": [1, 2, 3, 4, 5, 6],
+    "yData": [42, 55, 38, 70, 65, 80],
+    "chartType": "bar",
+    "description": "Monthly sales data"
+  }
+
+### GET all charts
+  Method: GET
+  URL: http://localhost:3000/api/charts
+
+### GET one chart
+  Method: GET
+  URL: http://localhost:3000/api/charts/{paste-id-here}
+
+### UPDATE a chart
+  Method: PATCH
+  URL: http://localhost:3000/api/charts/{paste-id-here}
+  Body (JSON):
+  {
+    "title": "Updated Sales 2024",
+    "yData": [50, 60, 45, 75, 70, 90]
+  }
+
+### DELETE a chart
+  Method: DELETE
+  URL: http://localhost:3000/api/charts/{paste-id-here}
+
+
+## DONE!
