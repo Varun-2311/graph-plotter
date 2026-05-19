@@ -1,3 +1,6 @@
+## Live Demo
+🌐 [graph-plotter-production.up.railway.app](https://graph-plotter-production.up.railway.app)
+
 # Graph Plotter
 
 A full-stack web application that accepts X and Y axis data and plots interactive graphs. Built with NestJS, MongoDB, and Chart.js.
